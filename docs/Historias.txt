@@ -1,0 +1,140 @@
+--- CADASTRO E AUTENTICAÇÃO ---------------------------------------------------
+
+US-01 | Ator: Aluno
+Como aluno, quero me cadastrar informando nome, email, CPF, RG, endereço,
+instituição e curso, para que eu possa participar do sistema de mérito.
+
+Critérios de Aceitação:
+  - Campos obrigatórios validados
+  - Instituição selecionada de lista pré-cadastrada
+  - Email de confirmação enviado
+  - Login e senha criados
+
+-------------------------------------------------------------------------------
+
+US-02 | Ator: Empresa Parceira
+Como empresa parceira, quero me cadastrar no sistema, para que eu possa
+oferecer vantagens aos alunos em troca de moedas.
+
+Critérios de Aceitação:
+  - Dados da empresa validados
+  - Login e senha criados
+  - Possibilidade de cadastrar vantagens após registro
+
+-------------------------------------------------------------------------------
+
+US-03 | Atores: Aluno, Professor, Empresa Parceira
+Como usuário do sistema, quero fazer login com email e senha, para que eu
+possa acessar as funcionalidades autenticadas.
+
+Critérios de Aceitação:
+  - Autenticação por credenciais
+  - Sessão criada
+  - Redirecionamento ao painel do perfil correspondente
+
+-------------------------------------------------------------------------------
+
+
+--- DISTRIBUIÇÃO DE MOEDAS ----------------------------------------------------
+
+US-04 | Ator: Sistema
+Como sistema, quero creditar 1.000 moedas a cada professor no início do
+semestre, para que eles possam reconhecer o mérito dos alunos.
+
+Critérios de Aceitação:
+  - Saldo acumulável (não distribuídas somam ao próximo semestre)
+  - Crédito automático por semestre
+  - Registro da transação de crédito
+
+-------------------------------------------------------------------------------
+
+US-05 | Ator: Professor
+Como professor, quero enviar moedas a um aluno indicando o motivo, para que
+eu reconheça bom comportamento ou participação.
+
+Critérios de Aceitação:
+  - Saldo suficiente verificado
+  - Aluno selecionado
+  - Mensagem de motivo obrigatória
+  - Saldo do professor debitado
+  - Saldo do aluno creditado
+  - Email de notificação enviado ao aluno
+
+-------------------------------------------------------------------------------
+
+
+--- CONSULTA E EXTRATO --------------------------------------------------------
+
+US-06 | Ator: Professor
+Como professor, quero consultar meu extrato, para que eu veja meu saldo
+atual e o histórico de envios de moedas.
+
+Critérios de Aceitação:
+  - Saldo atual visível
+  - Lista de transações com data, aluno e valor
+  - Ordenação cronológica
+
+-------------------------------------------------------------------------------
+
+US-07 | Ator: Aluno
+Como aluno, quero consultar meu extrato, para que eu veja meu saldo atual
+e o histórico de recebimentos e trocas.
+
+Critérios de Aceitação:
+  - Saldo atual visível
+  - Transações de recebimento e resgate listadas
+  - Data, origem/destino e valor exibidos
+
+-------------------------------------------------------------------------------
+
+
+--- VANTAGENS E RESGATE -------------------------------------------------------
+
+US-08 | Ator: Empresa Parceira
+Como empresa parceira, quero cadastrar vantagens com descrição, foto e custo
+em moedas, para que os alunos possam visualizá-las e resgatá-las.
+
+Critérios de Aceitação:
+  - Descrição obrigatória
+  - Foto obrigatória
+  - Custo em moedas definido
+  - Vantagem visível para alunos após cadastro
+
+-------------------------------------------------------------------------------
+
+US-09 | Ator: Aluno
+Como aluno, quero resgatar uma vantagem disponível, para que eu utilize
+minhas moedas em benefícios reais.
+
+Critérios de Aceitação:
+  - Saldo suficiente verificado
+  - Valor descontado do saldo do aluno
+  - Código de cupom gerado pelo sistema
+  - Email com cupom enviado ao aluno
+  - Email de conferência enviado à empresa parceira
+  - Código compartilhado entre aluno e empresa
+
+-------------------------------------------------------------------------------
+
+
+--- NOTIFICAÇÕES --------------------------------------------------------------
+
+US-10 | Ator: Aluno
+Como aluno, quero receber um email quando um professor me enviar moedas,
+para que eu saiba que fui reconhecido.
+
+Critérios de Aceitação:
+  - Email enviado automaticamente
+  - Contém nome do professor, valor recebido e motivo do reconhecimento
+
+-------------------------------------------------------------------------------
+
+US-11 | Ator: Empresa Parceira
+Como empresa parceira, quero receber um email quando um aluno resgatar uma
+vantagem, para que eu possa conferir o cupom presencialmente.
+
+Critérios de Aceitação:
+  - Email enviado automaticamente
+  - Contém código do cupom, nome do aluno e vantagem resgatada
+
+================================================================================
