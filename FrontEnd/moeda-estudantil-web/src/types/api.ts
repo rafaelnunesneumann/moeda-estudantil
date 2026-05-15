@@ -46,3 +46,38 @@ export interface ApiErrorResponse {
   errors?: string[];
   timestamp?: string;
 }
+
+export type UserRole = 'ALUNO' | 'EMPRESA';
+
+export interface LoginRequestDTO {
+  email: string;
+  senha: string;
+}
+
+export interface LoginResponseDTO {
+  token: string;
+  id: number;
+  nome: string;
+  email: string;
+  role: UserRole;
+}
+
+export type AuthUser = {
+  id: number;
+  nome: string;
+  email: string;
+  role: UserRole;
+} & (
+  | {
+      role: 'ALUNO';
+      cpf: string;
+      rg: string;
+      endereco: string;
+      curso: string;
+      instituicao: InstituicaoEnsinoResponseDTO;
+    }
+  | {
+      role: 'EMPRESA';
+      cnpj: string;
+    }
+);

@@ -29,7 +29,7 @@ export default function CadastroPage() {
             <span>MoedaEstudantil</span>
           </Link>
           <Link
-            href="/"
+            href="/login"
             className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
             Já tem conta?{' '}

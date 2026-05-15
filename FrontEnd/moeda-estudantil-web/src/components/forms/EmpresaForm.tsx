@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, LogIn } from 'lucide-react';
+import Link from 'next/link';
 import axios from 'axios';
 import { IMaskInput } from 'react-imask';
 
@@ -99,12 +100,12 @@ export function EmpresaForm({ onBack }: EmpresaFormProps) {
         <p className="text-slate-500 mb-8 text-sm leading-relaxed">
           Sua empresa foi cadastrada com sucesso. Agora você pode oferecer vantagens aos alunos.
         </p>
-        <button
-          onClick={onBack}
+        <Link
+          href="/login"
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25 hover:shadow-lg hover:shadow-amber-500/30 hover:brightness-110 transition-all cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Voltar ao início
-        </button>
+          <LogIn className="w-3.5 h-3.5" /> Fazer login
+        </Link>
       </motion.div>
     );
   }

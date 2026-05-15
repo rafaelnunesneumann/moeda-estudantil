@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ArrowLeft, Eye, EyeOff, Loader2, ChevronDown, Search, Check } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, ChevronDown, Search, Check, LogIn } from 'lucide-react';
+import Link from 'next/link';
 import axios from 'axios';
 import { IMaskInput } from 'react-imask';
 
@@ -209,12 +210,12 @@ export function AlunoForm({ onBack }: AlunoFormProps) {
         <p className="text-slate-500 mb-8 text-sm leading-relaxed">
           Seu cadastro foi realizado com sucesso. Agora você faz parte do MoedaEstudantil.
         </p>
-        <button
-          onClick={onBack}
+        <Link
+          href="/login"
           className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/30 hover:brightness-110 transition-all cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Voltar ao início
-        </button>
+          <LogIn className="w-3.5 h-3.5" /> Fazer login
+        </Link>
       </motion.div>
     );
   }
