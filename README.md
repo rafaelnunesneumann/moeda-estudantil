@@ -248,7 +248,7 @@ moeda-estudantil/
 
 | Nome | GitHub |
 | :--- | :--- |
-| Rafael Neumann | [@rafaelneumann](https://github.com/rafaelnunesneumann) |
+| Rafael Neumann | [@rafaelnunesneumann](https://github.com/rafaelnunesneumann) |
 
 ---
 
