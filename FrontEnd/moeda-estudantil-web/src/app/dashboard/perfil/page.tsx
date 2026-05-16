@@ -21,6 +21,7 @@ import {
   CreditCard,
   BookOpen,
   School,
+  Briefcase,
 } from 'lucide-react';
 import axios from 'axios';
 import { IMaskInput } from 'react-imask';
@@ -30,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInstituicoes } from '@/hooks/useInstituicoes';
-import { atualizarAluno, atualizarEmpresa, deletarAluno, deletarEmpresa } from '@/lib/api/auth';
+import { atualizarAluno, atualizarProfessor, atualizarEmpresa, deletarAluno, deletarEmpresa } from '@/lib/api/auth';
 import type { ApiErrorResponse } from '@/types/api';
 
 const stripMask = (v: string) => v.replace(/\D/g, '');
@@ -53,7 +54,15 @@ const empresaEditSchema = z.object({
   cnpj: z.string().length(14, 'CNPJ deve ter 14 dígitos'),
 });
 
+const professorEditSchema = z.object({
+  nome: z.string().min(1, 'Nome é obrigatório'),
+  email: z.string().email('Email inválido'),
+  senha: z.string().optional().refine((v) => !v || v.length >= 6, 'Mínimo de 6 caracteres'),
+  cpf: z.string().length(11, 'CPF deve ter 11 dígitos'),
+});
+
 type AlunoEditData = z.infer<typeof alunoEditSchema>;
+type ProfessorEditData = z.infer<typeof professorEditSchema>;
 type EmpresaEditData = z.infer<typeof empresaEditSchema>;
 
 interface InfoRowProps {
@@ -358,6 +367,207 @@ function AlunoProfile() {
   );
 }
 
+function ProfessorProfile() {
+  const { user, refreshUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const professor = user?.role === 'PROFESSOR' ? user : null;
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProfessorEditData>({
+    resolver: zodResolver(professorEditSchema),
+    defaultValues: professor
+      ? { nome: professor.nome, email: professor.email, cpf: professor.cpf, senha: '' }
+      : undefined,
+  });
+
+  if (!professor) return null;
+
+  const onSubmit = async (data: ProfessorEditData) => {
+    try {
+      await atualizarProfessor(professor.id, {
+        nome: data.nome,
+        email: data.email,
+        cpf: data.cpf,
+        senha: data.senha || undefined,
+      });
+      await refreshUser();
+      setEditing(false);
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const apiErr = err.response?.data as ApiErrorResponse;
+        toast.error('Erro ao atualizar', {
+          description: apiErr?.message || apiErr?.errors?.join(', ') || 'Tente novamente.',
+        });
+      } else {
+        toast.error('Erro inesperado.');
+      }
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <BookOpen className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">{professor.nome}</h2>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider mt-1">
+                Professor
+              </span>
+            </div>
+          </div>
+          <Button
+            onClick={() => setEditing(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2 cursor-pointer"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Editar
+          </Button>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">
+              Dados Pessoais
+            </h3>
+            <InfoRow icon={<Mail className="w-4 h-4 text-slate-400" />} label="Email" value={professor.email} />
+            <InfoRow icon={<CreditCard className="w-4 h-4 text-slate-400" />} label="CPF" value={professor.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')} />
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">
+              Dados Institucionais
+            </h3>
+            <InfoRow icon={<Briefcase className="w-4 h-4 text-slate-400" />} label="Departamento" value={professor.departamento} />
+            <InfoRow icon={<School className="w-4 h-4 text-slate-400" />} label="Instituição" value={professor.instituicao.nome} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-900">Editar Perfil</h2>
+        <Button
+          onClick={() => {
+            setEditing(false);
+            reset();
+          }}
+          variant="ghost"
+          size="sm"
+          className="gap-2 cursor-pointer"
+        >
+          <X className="w-3.5 h-3.5" />
+          Cancelar
+        </Button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Dados Pessoais</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-medium text-sm">Nome completo</Label>
+                <Input className="h-11" {...register('nome')} />
+                {errors.nome && <p className="text-rose-500 text-xs">{errors.nome.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-medium text-sm">Email</Label>
+                <Input type="email" className="h-11" {...register('email')} />
+                {errors.email && <p className="text-rose-500 text-xs">{errors.email.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-medium text-sm">CPF</Label>
+                <Controller
+                  name="cpf"
+                  control={control}
+                  render={({ field }) => (
+                    <IMaskInput
+                      mask="000.000.000-00"
+                      value={field.value ?? ''}
+                      onAccept={(val: string) => field.onChange(stripMask(val))}
+                      className="flex h-11 w-full rounded-md border border-slate-200 px-3 py-2 text-sm bg-white outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
+                    />
+                  )}
+                />
+                {errors.cpf && <p className="text-rose-500 text-xs">{errors.cpf.message}</p>}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Dados Institucionais</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-medium text-sm">Departamento</Label>
+                <Input className="h-11 bg-slate-50 text-slate-500" value={professor.departamento} disabled />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-slate-700 font-medium text-sm">Instituição</Label>
+                <Input className="h-11 bg-slate-50 text-slate-500" value={professor.instituicao.nome} disabled />
+              </div>
+              <p className="md:col-span-2 text-xs text-slate-400">
+                Departamento e instituição são gerenciados pela instituição de ensino.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Segurança</h3>
+            <div className="space-y-1.5">
+              <Label className="text-slate-700 font-medium text-sm">Nova Senha (deixe vazio para manter)</Label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Nova senha (opcional)"
+                  className="h-11 pr-12"
+                  {...register('senha')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.senha && <p className="text-rose-500 text-xs">{errors.senha.message}</p>}
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-base border-0 shadow-lg shadow-emerald-500/25 cursor-pointer"
+          >
+            {isSubmitting ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" />Salvando...</>
+            ) : (
+              <><Save className="w-4 h-4 mr-2" />Salvar alterações</>
+            )}
+          </Button>
+        </form>
+      </div>
+    </motion.div>
+  );
+}
+
 function EmpresaProfile() {
   const { user, refreshUser, logout } = useAuth();
   const [editing, setEditing] = useState(false);
@@ -590,7 +800,13 @@ export default function PerfilPage() {
       </motion.div>
 
       <AnimatePresence mode="wait">
-        {role === 'ALUNO' ? <AlunoProfile key="aluno" /> : <EmpresaProfile key="empresa" />}
+        {role === 'ALUNO' ? (
+          <AlunoProfile key="aluno" />
+        ) : role === 'PROFESSOR' ? (
+          <ProfessorProfile key="professor" />
+        ) : (
+          <EmpresaProfile key="empresa" />
+        )}
       </AnimatePresence>
     </div>
   );

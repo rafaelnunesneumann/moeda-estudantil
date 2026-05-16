@@ -5,14 +5,19 @@ import com.moedaestudantil.dto.aluno.AlunoResponseDTO;
 import com.moedaestudantil.dto.instituicao.InstituicaoEnsinoResponseDTO;
 import com.moedaestudantil.exception.ResourceNotFoundException;
 import com.moedaestudantil.model.Aluno;
+import com.moedaestudantil.model.ContaCorrente;
 import com.moedaestudantil.model.InstituicaoEnsino;
+import com.moedaestudantil.model.Professor;
 import com.moedaestudantil.repository.AlunoRepository;
+import com.moedaestudantil.repository.ContaCorrenteRepository;
 import com.moedaestudantil.repository.InstituicaoEnsinoRepository;
+import com.moedaestudantil.repository.ProfessorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -21,6 +26,8 @@ public class AlunoService {
 
     private final AlunoRepository alunoRepository;
     private final InstituicaoEnsinoRepository instituicaoEnsinoRepository;
+    private final ContaCorrenteRepository contaCorrenteRepository;
+    private final ProfessorRepository professorRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -49,7 +56,14 @@ public class AlunoService {
         aluno.setCurso(dto.curso());
         aluno.setInstituicaoEnsino(instituicao);
 
-        return toResponseDTO(alunoRepository.save(aluno));
+        Aluno savedAluno = alunoRepository.save(aluno);
+
+        ContaCorrente conta = new ContaCorrente();
+        conta.setSaldo(BigDecimal.ZERO);
+        conta.setAluno(savedAluno);
+        contaCorrenteRepository.save(conta);
+
+        return toResponseDTO(savedAluno);
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +109,16 @@ public class AlunoService {
         aluno.setInstituicaoEnsino(instituicao);
 
         return toResponseDTO(alunoRepository.save(aluno));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AlunoResponseDTO> listarPorInstituicaoDoProfessor(Long professorId) {
+        Professor professor = professorRepository.findById(professorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Professor não encontrado com id: " + professorId));
+        return alunoRepository.findByInstituicaoEnsinoId(professor.getInstituicaoEnsino().getId())
+                .stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
 
     @Transactional

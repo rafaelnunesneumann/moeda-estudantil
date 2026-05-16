@@ -148,7 +148,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-sm text-slate-400 mt-6">
-            Alunos e Empresas Parceiras podem fazer login aqui.
+            Alunos, Professores e Empresas Parceiras podem fazer login aqui.
           </p>
         </motion.div>
       </main>
