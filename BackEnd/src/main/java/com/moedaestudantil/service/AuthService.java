@@ -5,11 +5,14 @@ import com.moedaestudantil.dto.auth.LoginRequestDTO;
 import com.moedaestudantil.dto.auth.LoginResponseDTO;
 import com.moedaestudantil.dto.empresa.EmpresaParceiraResponseDTO;
 import com.moedaestudantil.dto.instituicao.InstituicaoEnsinoResponseDTO;
+import com.moedaestudantil.dto.professor.ProfessorResponseDTO;
 import com.moedaestudantil.model.Aluno;
 import com.moedaestudantil.model.EmpresaParceira;
 import com.moedaestudantil.model.InstituicaoEnsino;
+import com.moedaestudantil.model.Professor;
 import com.moedaestudantil.repository.AlunoRepository;
 import com.moedaestudantil.repository.EmpresaParceiraRepository;
+import com.moedaestudantil.repository.ProfessorRepository;
 import com.moedaestudantil.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final AlunoRepository alunoRepository;
+    private final ProfessorRepository professorRepository;
     private final EmpresaParceiraRepository empresaParceiraRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -33,6 +37,15 @@ public class AuthService {
             if (passwordEncoder.matches(dto.senha(), aluno.getSenha())) {
                 String token = jwtUtil.generateToken(aluno.getId(), aluno.getEmail(), "ALUNO");
                 return new LoginResponseDTO(token, aluno.getId(), aluno.getNome(), aluno.getEmail(), "ALUNO");
+            }
+        }
+
+        var professorOpt = professorRepository.findByEmail(dto.email());
+        if (professorOpt.isPresent()) {
+            Professor professor = professorOpt.get();
+            if (passwordEncoder.matches(dto.senha(), professor.getSenha())) {
+                String token = jwtUtil.generateToken(professor.getId(), professor.getEmail(), "PROFESSOR");
+                return new LoginResponseDTO(token, professor.getId(), professor.getNome(), professor.getEmail(), "PROFESSOR");
             }
         }
 
@@ -59,6 +72,15 @@ public class AuthService {
                         aluno.getId(), aluno.getNome(), aluno.getEmail(),
                         aluno.getCpf(), aluno.getRg(), aluno.getEndereco(),
                         aluno.getCurso(),
+                        new InstituicaoEnsinoResponseDTO(inst.getId(), inst.getNome(), inst.getEndereco()));
+            }
+            case "PROFESSOR" -> {
+                Professor professor = professorRepository.findById(id)
+                        .orElseThrow(() -> new IllegalArgumentException("Professor não encontrado"));
+                InstituicaoEnsino inst = professor.getInstituicaoEnsino();
+                yield new ProfessorResponseDTO(
+                        professor.getId(), professor.getNome(), professor.getEmail(),
+                        professor.getCpf(), professor.getDepartamento(),
                         new InstituicaoEnsinoResponseDTO(inst.getId(), inst.getNome(), inst.getEndereco()));
             }
             case "EMPRESA" -> {

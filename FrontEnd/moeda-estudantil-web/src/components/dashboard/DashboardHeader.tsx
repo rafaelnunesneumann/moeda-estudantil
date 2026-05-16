@@ -26,7 +26,7 @@ export function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) {
               Olá, {user?.nome?.split(' ')[0]}
             </h2>
             <p className="text-xs text-slate-400">
-              {role === 'ALUNO' ? 'Painel do Aluno' : 'Painel da Empresa'}
+              {role === 'ALUNO' ? 'Painel do Aluno' : role === 'PROFESSOR' ? 'Painel do Professor' : 'Painel da Empresa'}
             </p>
           </div>
         </div>
@@ -37,7 +37,9 @@ export function DashboardHeader({ onMenuToggle }: DashboardHeaderProps) {
               'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold',
               role === 'ALUNO'
                 ? 'bg-indigo-50 text-indigo-700'
-                : 'bg-amber-50 text-amber-700',
+                : role === 'PROFESSOR'
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700',
             )}
           >
             {user?.email}

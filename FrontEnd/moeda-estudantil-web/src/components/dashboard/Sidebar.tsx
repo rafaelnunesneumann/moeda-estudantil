@@ -11,11 +11,22 @@ import {
   X,
   GraduationCap,
   Building2,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
-const navItems = [
+import type { UserRole } from '@/types/api';
+import type { LucideIcon } from 'lucide-react';
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  roles?: UserRole[];
+}
+
+const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Meu Perfil', href: '/dashboard/perfil', icon: UserCircle },
 ];
@@ -52,11 +63,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 'w-10 h-10 rounded-xl flex items-center justify-center shadow-sm',
                 role === 'ALUNO'
                   ? 'bg-gradient-to-br from-indigo-500 to-violet-500'
-                  : 'bg-gradient-to-br from-amber-400 to-amber-600',
+                  : role === 'PROFESSOR'
+                    ? 'bg-gradient-to-br from-emerald-500 to-teal-500'
+                    : 'bg-gradient-to-br from-amber-400 to-amber-600',
               )}
             >
               {role === 'ALUNO' ? (
                 <GraduationCap className="w-5 h-5 text-white" />
+              ) : role === 'PROFESSOR' ? (
+                <BookOpen className="w-5 h-5 text-white" />
               ) : (
                 <Building2 className="w-5 h-5 text-white" />
               )}
@@ -68,10 +83,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   'inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider mt-0.5',
                   role === 'ALUNO'
                     ? 'bg-indigo-100 text-indigo-700'
-                    : 'bg-amber-100 text-amber-700',
+                    : role === 'PROFESSOR'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-amber-100 text-amber-700',
                 )}
               >
-                {role === 'ALUNO' ? 'Aluno' : 'Empresa'}
+                {role === 'ALUNO' ? 'Aluno' : role === 'PROFESSOR' ? 'Professor' : 'Empresa'}
               </span>
             </div>
           </div>
@@ -80,26 +97,30 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-4 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
-                active
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
-              )}
-            >
-              <Icon className={cn('w-5 h-5', active ? 'text-indigo-600' : 'text-slate-400')} />
-              {item.label}
-            </Link>
-          );
-        })}
+        {navItems
+          .filter((item) => !item.roles || (role && item.roles.includes(role)))
+          .map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            const activeColor = role === 'PROFESSOR' ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700';
+            const activeIcon = role === 'PROFESSOR' ? 'text-emerald-600' : 'text-indigo-600';
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
+                  active
+                    ? `${activeColor} shadow-sm`
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50',
+                )}
+              >
+                <Icon className={cn('w-5 h-5', active ? activeIcon : 'text-slate-400')} />
+                {item.label}
+              </Link>
+            );
+          })}
       </nav>
 
       {/* Logout */}

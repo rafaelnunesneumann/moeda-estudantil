@@ -39,8 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedRole = localStorage.getItem('user_role') as UserRole | null;
       const profile = await getMe();
 
-      if (storedRole === 'ALUNO' && 'cpf' in profile) {
+      if (storedRole === 'ALUNO' && 'rg' in profile) {
         setUser({ ...profile, role: 'ALUNO' } as AuthUser);
+      } else if (storedRole === 'PROFESSOR' && 'departamento' in profile) {
+        setUser({ ...profile, role: 'PROFESSOR' } as AuthUser);
       } else if (storedRole === 'EMPRESA' && 'cnpj' in profile) {
         setUser({ ...profile, role: 'EMPRESA' } as AuthUser);
       }
