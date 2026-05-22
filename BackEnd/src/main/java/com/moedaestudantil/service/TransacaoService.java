@@ -3,6 +3,7 @@ package com.moedaestudantil.service;
 import com.moedaestudantil.dto.transacao.EnviarMoedasRequestDTO;
 import com.moedaestudantil.dto.transacao.ExtratoResponseDTO;
 import com.moedaestudantil.dto.transacao.TransacaoResponseDTO;
+import com.moedaestudantil.event.TransacaoRealizadaEvent;
 import com.moedaestudantil.exception.ResourceNotFoundException;
 import com.moedaestudantil.model.*;
 import com.moedaestudantil.repository.AlunoRepository;
@@ -10,6 +11,7 @@ import com.moedaestudantil.repository.ContaCorrenteRepository;
 import com.moedaestudantil.repository.TransacaoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class TransacaoService {
     private final ContaCorrenteRepository contaCorrenteRepository;
     private final TransacaoRepository transacaoRepository;
     private final AlunoRepository alunoRepository;
+    private final KafkaTemplate<String, TransacaoRealizadaEvent> kafkaTemplate;
 
     @Transactional
     public TransacaoResponseDTO enviarMoedas(Long professorId, EnviarMoedasRequestDTO dto) {
@@ -76,8 +79,20 @@ public class TransacaoService {
         recebimento.setAluno(aluno);
         transacaoRepository.save(recebimento);
 
-        log.info("Notificação: aluno {} recebeu {} moedas do professor {}. Motivo: {}",
-                aluno.getEmail(), dto.valor(), contaProfessor.getProfessor().getNome(), dto.motivo());
+        TransacaoRealizadaEvent event = new TransacaoRealizadaEvent(
+                professor.getNome(),
+                professor.getEmail(),
+                aluno.getNome(),
+                aluno.getEmail(),
+                dto.valor(),
+                dto.motivo(),
+                contaAluno.getSaldo(),
+                contaProfessor.getSaldo(),
+                agora
+        );
+        kafkaTemplate.send("transacao-realizada", event);
+        log.info("Evento publicado no Kafka: professor={} -> aluno={}, valor={}",
+                professor.getEmail(), aluno.getEmail(), dto.valor());
 
         return toResponseDTO(envio);
     }
