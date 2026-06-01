@@ -1,0 +1,79 @@
+@startuml 08-resgatar-vantagem
+!theme plain
+title US-09 - Resgatar Vantagem (Trocar moedas por vantagem)  <<include>> Notificar por email
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #4F46E5
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #4F46E5
+  ParticipantBackgroundColor #EEF2FF
+  ActorBorderColor #1E293B
+}
+
+actor "Aluno" as ator
+boundary "Portal Aluno\n(Frontend)" as portal
+control "CupomController" as ctrl
+participant "CupomService\n(Gestao de Cupons)" as svc
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+queue "Kafka\n(resgate-realizado)" as mq
+
+note over ator, svc #E0E7FF
+  Caso de uso de projeto (US-09 / US-11): entidade Cupom e o
+  resgate ainda nao implementados no codigo. Fluxo conforme
+  diagrama de classes (Aluno.resgatarVantagem(vantagem): Cupom).
+end note
+
+ator -> portal : escolhe vantagem disponivel e confirma resgate
+portal -> ctrl : POST /vantagens/{id}/resgatar\n(Bearer JWT)
+activate ctrl
+ctrl -> ctrl : valida papel = ALUNO (JwtUserDetails)
+ctrl -> svc : resgatar(alunoId, vantagemId)
+activate svc
+
+svc -> repo : vantagemRepository.findById(vantagemId)
+repo -> db : SELECT
+db --> repo
+repo --> svc : Vantagem (custoMoedas)
+
+break vantagem nao encontrada
+  svc --> ctrl : ResourceNotFoundException
+  ctrl --> portal : 404 Not Found
+end
+
+svc -> repo : contaCorrenteRepository.findByAlunoId(alunoId)
+repo -> db : SELECT
+db --> repo
+repo --> svc : ContaCorrente (aluno)
+
+break saldo insuficiente (saldo < custoMoedas)
+  svc --> ctrl : IllegalArgumentException("Saldo insuficiente")
+  ctrl --> portal : 409 Conflict
+end
+
+svc -> svc : contaAluno.debitar(custoMoedas)
+svc -> repo : contaCorrenteRepository.save(contaAluno)
+repo -> db : UPDATE CONTA_CORRENTE
+db --> repo
+
+svc -> svc : gera codigo do cupom (UUID)\ncria Cupom(codigo, vantagem, aluno, dataGeracao, utilizado=false)
+svc -> repo : cupomRepository.save(cupom)
+repo -> db : INSERT INTO CUPOM
+db --> repo
+
+svc -> repo : transacaoRepository.save(\nTransacao RESGATE, valor=custoMoedas)
+repo -> db : INSERT INTO TRANSACAO
+db --> repo
+
+svc ->> mq : publica ResgateRealizadoEvent (assincrono)
+ref over portal, mq : <<include>> Notificar por email (US-11)\ncupom ao aluno + conferencia a empresa\ndetalhe em 09-notificar-por-email.puml
+
+svc --> ctrl : CupomResponseDTO(codigo, vantagem, novoSaldo)
+deactivate svc
+ctrl --> portal : 200 OK
+deactivate ctrl
+portal --> ator : resgate confirmado - exibe codigo do cupom
+@enduml

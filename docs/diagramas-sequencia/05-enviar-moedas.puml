@@ -1,0 +1,73 @@
+@startuml 05-enviar-moedas
+!theme plain
+title US-05 - Enviar Moedas (Professor -> Aluno)  <<include>> Notificar por email
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #059669
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #D1FAE5
+  ActorBorderColor #1E293B
+}
+
+actor "Professor" as ator
+boundary "Portal Professor\n(Frontend)" as portal
+control "TransacaoController" as ctrl
+participant "TransacaoService" as svc
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+queue "Kafka\n(transacao-realizada)" as mq
+
+ator -> portal : seleciona aluno, valor e motivo
+portal -> ctrl : POST /transacoes/enviar\nEnviarMoedasRequestDTO (Bearer JWT)
+activate ctrl
+ctrl -> ctrl : valida papel = PROFESSOR (JwtUserDetails)
+ctrl -> svc : enviarMoedas(professorId, dto)
+activate svc
+
+svc -> repo : contaCorrenteRepository.findByProfessorId(professorId)
+repo -> db : SELECT
+db --> repo
+repo --> svc : ContaCorrente (professor)
+
+svc -> repo : alunoRepository.findById(alunoId)
+repo -> db : SELECT
+db --> repo
+repo --> svc : Aluno
+
+break professor e aluno de instituicoes diferentes
+  svc --> ctrl : IllegalArgumentException
+  ctrl --> portal : 409 Conflict
+end
+
+svc -> repo : contaCorrenteRepository.findByAlunoId(alunoId)
+repo -> db : SELECT
+db --> repo
+repo --> svc : ContaCorrente (aluno)
+
+break saldo do professor insuficiente
+  svc --> ctrl : IllegalArgumentException("Saldo insuficiente")
+  ctrl --> portal : 409 Conflict
+end
+
+svc -> svc : contaProfessor.debitar(valor)\ncontaAluno.creditar(valor)
+svc -> repo : save(contaProfessor), save(contaAluno)
+repo -> db : UPDATE CONTA_CORRENTE (x2)
+db --> repo
+
+svc -> repo : transacaoRepository.save(ENVIO)\ntransacaoRepository.save(RECEBIMENTO)
+repo -> db : INSERT INTO TRANSACAO (x2)
+db --> repo
+
+svc ->> mq : publica TransacaoRealizadaEvent (assincrono)
+ref over portal, mq : <<include>> Notificar por email (US-10)\ndetalhe em 09-notificar-por-email.puml
+
+svc --> ctrl : TransacaoResponseDTO
+deactivate svc
+ctrl --> portal : 200 OK
+deactivate ctrl
+portal --> ator : moedas enviadas com sucesso
+@enduml

@@ -1,0 +1,56 @@
+@startuml 06-consultar-extrato
+!theme plain
+title US-06 / US-07 - Consultar Extrato (Professor e Aluno)
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #4F46E5
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #4F46E5
+  ParticipantBackgroundColor #EEF2FF
+  ActorBorderColor #1E293B
+}
+
+actor "Professor / Aluno" as ator
+boundary "Portal\n(Frontend)" as portal
+control "TransacaoController" as ctrl
+participant "TransacaoService" as svc
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+
+ator -> portal : abre "Meu Extrato"
+portal -> ctrl : GET /transacoes/extrato\n(Bearer JWT)
+activate ctrl
+ctrl -> ctrl : extrai id e role (JwtUserDetails)
+ctrl -> svc : getExtrato(userId, role)
+activate svc
+
+alt role = PROFESSOR
+  svc -> repo : contaCorrenteRepository.findByProfessorId(userId)
+  repo -> db : SELECT
+  db --> repo
+  repo --> svc : ContaCorrente (saldo)
+  svc -> repo : transacaoRepository\n.findByContaOrigem...OrderByDataDesc\n(ENVIO, CREDITO_SEMESTRAL)
+  repo -> db : SELECT
+  db --> repo
+  repo --> svc : List<Transacao> (envios)
+else role = ALUNO
+  svc -> repo : contaCorrenteRepository.findByAlunoId(userId)
+  repo -> db : SELECT
+  db --> repo
+  repo --> svc : ContaCorrente (saldo)
+  svc -> repo : transacaoRepository\n.findByContaDestino...OrderByDataDesc\n(RECEBIMENTO, RESGATE)
+  repo -> db : SELECT
+  db --> repo
+  repo --> svc : List<Transacao> (recebimentos/resgates)
+end
+
+svc -> svc : monta ExtratoResponseDTO(saldo, transacoes)
+svc --> ctrl : ExtratoResponseDTO
+deactivate svc
+ctrl --> portal : 200 OK
+deactivate ctrl
+portal --> ator : exibe saldo atual + historico (ordenado por data)
+@enduml

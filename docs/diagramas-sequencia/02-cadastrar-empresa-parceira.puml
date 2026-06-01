@@ -1,0 +1,63 @@
+@startuml 02-cadastrar-empresa-parceira
+!theme plain
+title US-02 - Cadastrar Empresa Parceira
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #D97706
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #D97706
+  ParticipantBackgroundColor #FEF3C7
+  ActorBorderColor #1E293B
+}
+
+actor "Empresa Parceira" as ator
+boundary "Portal Empresa\n(Frontend)" as portal
+control "EmpresaParceiraController" as ctrl
+participant "EmpresaParceiraService" as svc
+participant "PasswordEncoder" as enc
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+
+ator -> portal : preenche cadastro\n(nome, CNPJ, email, senha)
+portal -> ctrl : POST /empresas\nEmpresaParceiraRequestDTO
+activate ctrl
+ctrl -> svc : cadastrar(dto)
+activate svc
+
+svc -> repo : existsByEmail(email)
+repo -> db : SELECT
+db --> repo
+repo --> svc : false
+
+break email ja cadastrado
+  svc --> ctrl : IllegalArgumentException
+  ctrl --> portal : 409 Conflict
+end
+
+svc -> repo : existsByCnpj(cnpj)
+repo -> db : SELECT
+db --> repo
+repo --> svc : false
+
+break CNPJ ja cadastrado
+  svc --> ctrl : IllegalArgumentException
+  ctrl --> portal : 409 Conflict
+end
+
+svc -> enc : encode(senha)
+enc --> svc : hash BCrypt
+
+svc -> repo : empresaParceiraRepository.save(empresa)
+repo -> db : INSERT INTO EMPRESA_PARCEIRA
+db --> repo
+repo --> svc : EmpresaParceira persistida
+
+svc --> ctrl : EmpresaParceiraResponseDTO
+deactivate svc
+ctrl --> portal : 201 Created
+deactivate ctrl
+portal --> ator : cadastro concluido\n(ja pode cadastrar vantagens - ver 07)
+@enduml

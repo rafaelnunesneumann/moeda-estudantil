@@ -1,0 +1,73 @@
+@startuml 01-cadastrar-aluno
+!theme plain
+title US-01 - Cadastrar Aluno
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #4F46E5
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #4F46E5
+  ParticipantBackgroundColor #EEF2FF
+  ActorBorderColor #1E293B
+}
+
+actor "Aluno" as ator
+boundary "Portal Aluno\n(Frontend)" as portal
+control "AlunoController" as ctrl
+participant "AlunoService" as svc
+participant "PasswordEncoder" as enc
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+
+ator -> portal : preenche cadastro\n(nome, email, CPF, RG, endereco, curso, instituicao, senha)
+portal -> ctrl : POST /alunos\nAlunoRequestDTO
+activate ctrl
+ctrl -> svc : cadastrar(dto)
+activate svc
+
+svc -> repo : existsByEmail / existsByCpf / existsByRg
+repo -> db : SELECT
+db --> repo
+repo --> svc : false (nao cadastrados)
+
+break email / CPF / RG ja cadastrado
+  svc --> ctrl : IllegalArgumentException
+  ctrl --> portal : 409 Conflict
+end
+
+svc -> repo : instituicaoRepository.findById(instituicaoId)
+repo -> db : SELECT
+db --> repo
+repo --> svc : InstituicaoEnsino
+
+break instituicao nao encontrada
+  svc --> ctrl : ResourceNotFoundException
+  ctrl --> portal : 404 Not Found
+end
+
+svc -> enc : encode(senha)
+enc --> svc : hash BCrypt
+
+svc -> repo : alunoRepository.save(aluno)
+repo -> db : INSERT INTO USUARIO + ALUNO
+db --> repo
+repo --> svc : Aluno persistido
+
+svc -> repo : contaCorrenteRepository.save(conta saldo = 0)
+repo -> db : INSERT INTO CONTA_CORRENTE
+db --> repo
+repo --> svc : ContaCorrente
+
+note over svc #FEF3C7
+  Criterio US-01: enviar e-mail de confirmacao de cadastro.
+  Entrega assincrona - ver 09-notificar-por-email.
+end note
+
+svc --> ctrl : AlunoResponseDTO
+deactivate svc
+ctrl --> portal : 201 Created
+deactivate ctrl
+portal --> ator : conta criada - redireciona para o login
+@enduml

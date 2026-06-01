@@ -1,0 +1,53 @@
+@startuml 04-creditar-moedas-semestrais
+!theme plain
+title US-04 - Creditar Moedas Semestrais (1.000 por professor)
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #059669
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #059669
+  ParticipantBackgroundColor #D1FAE5
+  ActorBorderColor #1E293B
+}
+
+actor "Sistema\n(Agendador)" as sistema
+participant "CreditoSemestralService" as svc
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+
+sistema -> svc : creditarMoedasSemestrais()\n@Scheduled (inicio de cada semestre)
+activate svc
+
+svc -> repo : professorRepository.findAll()
+repo -> db : SELECT * FROM PROFESSOR
+db --> repo
+repo --> svc : List<Professor>
+
+loop para cada professor
+  svc -> repo : contaCorrenteRepository.findByProfessorId(id)
+  repo -> db : SELECT
+  db --> repo
+  repo --> svc : ContaCorrente
+
+  svc -> svc : conta.creditar(1000)\nsaldo = saldo + 1000 (acumulavel)
+
+  svc -> repo : contaCorrenteRepository.save(conta)
+  repo -> db : UPDATE CONTA_CORRENTE
+  db --> repo
+
+  svc -> repo : transacaoRepository.save(\nTransacao CREDITO_SEMESTRAL, valor=1000)
+  repo -> db : INSERT INTO TRANSACAO
+  db --> repo
+end
+
+note over svc, db #FEF3C7
+  Saldo acumulavel (US-04): se o professor nao distribuiu tudo,
+  as 1.000 novas moedas sao somadas ao saldo corrente (nao zera).
+end note
+
+svc --> sistema : credito concluido
+deactivate svc
+@enduml

@@ -1,0 +1,52 @@
+@startuml 03-fazer-login
+!theme plain
+title US-03 - Fazer Login (Aluno / Professor / Empresa)
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #4F46E5
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #4F46E5
+  ParticipantBackgroundColor #EEF2FF
+  ActorBorderColor #1E293B
+}
+
+actor "Usuario\n(Aluno/Professor/Empresa)" as ator
+boundary "Portal\n(Frontend)" as portal
+control "AuthController" as ctrl
+participant "AuthService" as svc
+participant "PasswordEncoder" as enc
+participant "JwtUtil" as jwt
+collections "Repositorios JPA" as repo
+database "PostgreSQL" as db
+
+ator -> portal : informa email e senha
+portal -> ctrl : POST /auth/login\nLoginRequestDTO
+activate ctrl
+ctrl -> svc : login(dto)
+activate svc
+
+svc -> repo : findByEmail(email)\n(Aluno, depois Professor, depois Empresa)
+repo -> db : SELECT
+db --> repo
+repo --> svc : usuario encontrado + papel (ALUNO/PROFESSOR/EMPRESA)
+
+alt credenciais validas
+  svc -> enc : matches(senha, hashArmazenado)
+  enc --> svc : true
+  svc -> jwt : generateToken(id, email, role)
+  jwt --> svc : JWT assinado
+  svc --> ctrl : LoginResponseDTO(token, id, nome, email, role)
+  ctrl --> portal : 200 OK
+  portal -> portal : armazena token + role\n(localStorage)
+  portal --> ator : redireciona ao painel do papel
+else email inexistente ou senha invalida
+  svc --> ctrl : IllegalArgumentException("Email ou senha invalidos")
+  ctrl --> portal : 409 Conflict
+  portal --> ator : credenciais invalidas
+end
+deactivate svc
+deactivate ctrl
+@enduml

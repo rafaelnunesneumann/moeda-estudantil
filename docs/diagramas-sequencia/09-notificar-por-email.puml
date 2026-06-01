@@ -1,0 +1,70 @@
+@startuml 09-notificar-por-email
+!theme plain
+title US-10 / US-11 - Notificar por email (<<include>> de Enviar moedas e Resgatar vantagem)
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 240
+skinparam sequence {
+  ArrowColor #4F46E5
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #4F46E5
+  ParticipantBackgroundColor #EEF2FF
+  ActorBorderColor #1E293B
+}
+
+participant "Servico de origem\n(Moedas / Cupons)" as svc
+queue "Kafka\n(mensageria)" as mq
+control "TransacaoEmailListener\n@KafkaListener" as listener
+participant "EmailService" as mail
+participant "Thymeleaf\nTemplateEngine" as tpl
+participant "SMTP\n(Servico de Email)" as smtp
+actor "Destinatarios" as dest
+
+svc ->> mq : publica evento da transacao
+mq ->> listener : entrega o evento (consumidor)
+activate listener
+
+alt Recebimento de moedas (US-05 / US-10)
+  listener -> mail : enviarEmailProfessor(event)
+  activate mail
+  mail -> tpl : process("email/professor-envio")
+  tpl --> mail : HTML
+  mail -> smtp : send(MimeMessage)\n"Envio de moedas confirmado"
+  smtp --> dest : e-mail ao professor
+  deactivate mail
+
+  listener -> mail : enviarEmailAluno(event)
+  activate mail
+  mail -> tpl : process("email/aluno-recebimento")
+  tpl --> mail : HTML (professor, valor, motivo)
+  mail -> smtp : send(MimeMessage)\n"Voce recebeu moedas!"
+  smtp --> dest : e-mail ao aluno
+  deactivate mail
+
+else Resgate de vantagem (US-09 / US-11)
+  listener -> mail : enviarCupomAluno(event)
+  activate mail
+  mail -> tpl : process("email/cupom-aluno")
+  tpl --> mail : HTML (codigo do cupom)
+  mail -> smtp : send "Seu cupom de resgate"
+  smtp --> dest : e-mail ao aluno (cupom)
+  deactivate mail
+
+  listener -> mail : enviarConferenciaEmpresa(event)
+  activate mail
+  mail -> tpl : process("email/conferencia-empresa")
+  tpl --> mail : HTML (codigo do cupom, aluno, vantagem)
+  mail -> smtp : send "Resgate para conferencia"
+  smtp --> dest : e-mail a empresa (conferencia)
+  deactivate mail
+end
+
+deactivate listener
+
+note over mq, smtp #FEF3C7
+  Entrega assincrona e desacoplada (event-driven).
+  Um mesmo codigo de cupom e compartilhado entre aluno e empresa (US-11).
+  Falha no envio nao reverte a transacao (try/catch + log).
+end note
+@enduml
