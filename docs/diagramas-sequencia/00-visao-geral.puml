@@ -1,0 +1,168 @@
+@startuml 00-visao-geral
+!theme plain
+title Diagrama de Sequencia Geral - Sistema de Moeda Estudantil
+autonumber
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 260
+skinparam BoxPadding 12
+skinparam sequence {
+  ArrowColor #4F46E5
+  LifeLineBorderColor #94A3B8
+  ParticipantBorderColor #4F46E5
+  ParticipantBackgroundColor #EEF2FF
+  ActorBorderColor #1E293B
+}
+
+actor "Aluno" as aluno
+actor "Professor" as prof
+actor "Empresa\nParceira" as empresa
+actor "Sistema\n(Agendador)" as agendador
+
+box "Sistema de Moeda Estudantil" #F8FAFC
+  boundary "Portal\n(Frontend)" as portal
+  control "API REST\n(Controllers)" as ctrl
+  participant "Servicos\n(Regras de Negocio)" as svc
+  participant "Seguranca\n(JWT / BCrypt)" as sec
+  collections "Repositorios JPA" as repo
+  queue "Kafka" as mq
+  participant "EmailService\n(+ Thymeleaf / SMTP)" as mail
+  database "PostgreSQL" as db
+end box
+
+== 1. Cadastro (US-01 / US-02) ==
+
+aluno -> portal : preenche cadastro\n(dados + senha)
+empresa -> portal : preenche cadastro\n(dados + senha)
+portal -> ctrl : POST /alunos | POST /empresas
+activate ctrl
+ctrl -> svc : cadastrar(dto)
+activate svc
+svc -> repo : valida unicidade\n(email / CPF / CNPJ)
+repo -> db : SELECT
+svc -> sec : encode(senha)
+sec --> svc : hash BCrypt
+svc -> repo : save(usuario)\n+ save(ContaCorrente saldo=0)
+repo -> db : INSERT
+svc --> ctrl : ResponseDTO
+deactivate svc
+ctrl --> portal : 201 Created
+deactivate ctrl
+portal --> aluno : conta criada
+ref over aluno, db : Detalhe em 01-cadastrar-aluno / 02-cadastrar-empresa-parceira
+
+== 2. Autenticacao (US-03) ==
+
+prof -> portal : informa email e senha
+portal -> ctrl : POST /auth/login
+activate ctrl
+ctrl -> svc : login(dto)
+activate svc
+svc -> repo : findByEmail(email)
+repo -> db : SELECT
+svc -> sec : matches(senha) + generateToken(id, role)
+sec --> svc : JWT assinado
+svc --> ctrl : LoginResponseDTO(token, role)
+deactivate svc
+ctrl --> portal : 200 OK + JWT
+deactivate ctrl
+portal --> prof : redireciona ao painel do papel
+ref over prof, db : Detalhe em 03-fazer-login
+
+== 3. Distribuicao de Moedas (US-04 / US-05) ==
+
+agendador -> svc : creditarMoedasSemestrais()\n@Scheduled (inicio do semestre)
+activate svc
+svc -> repo : findAll(professores)\n+ creditar(1000) acumulavel + Transacao
+repo -> db : UPDATE / INSERT
+svc --> agendador : credito concluido
+deactivate svc
+ref over agendador, db : Detalhe em 04-creditar-moedas-semestrais
+
+prof -> portal : seleciona aluno, valor e motivo
+portal -> ctrl : POST /transacoes/enviar (Bearer JWT)
+activate ctrl
+ctrl -> ctrl : valida papel = PROFESSOR
+ctrl -> svc : enviarMoedas(professorId, dto)
+activate svc
+svc -> repo : debita professor / credita aluno\n+ Transacao ENVIO / RECEBIMENTO
+repo -> db : UPDATE / INSERT
+svc ->> mq : TransacaoRealizadaEvent (assincrono)
+svc --> ctrl : TransacaoResponseDTO
+deactivate svc
+ctrl --> portal : 200 OK
+deactivate ctrl
+portal --> prof : moedas enviadas
+ref over prof, db : Detalhe em 05-enviar-moedas
+
+== 4. Notificacao por Email (US-10 / US-11) ==
+
+mq ->> mail : entrega evento (@KafkaListener)
+activate mail
+mail -> mail : process(template Thymeleaf)
+mail ->> aluno : e-mail "Voce recebeu moedas!" / cupom
+mail ->> empresa : e-mail de conferencia do cupom
+deactivate mail
+ref over mq, mail : Detalhe em 09-notificar-por-email\n(disparado por Enviar moedas e por Resgatar vantagem)
+
+== 5. Consulta de Extrato (US-06 / US-07) ==
+
+aluno -> portal : abre "Meu Extrato"
+portal -> ctrl : GET /transacoes/extrato (Bearer JWT)
+activate ctrl
+ctrl -> svc : getExtrato(userId, role)
+activate svc
+svc -> repo : busca ContaCorrente (saldo)\n+ Transacoes ordenadas por data
+repo -> db : SELECT
+svc --> ctrl : ExtratoResponseDTO(saldo, historico)
+deactivate svc
+ctrl --> portal : 200 OK
+deactivate ctrl
+portal --> aluno : exibe saldo + historico
+ref over aluno, db : Detalhe em 06-consultar-extrato
+
+== 6. Vantagens e Resgate (US-08 / US-09) ==
+
+empresa -> portal : cadastra vantagem\n(descricao, foto/URL, custo)
+portal -> ctrl : POST /vantagens (Bearer JWT)
+activate ctrl
+ctrl -> svc : cadastrar(empresaId, dto)
+activate svc
+svc -> repo : save(Vantagem)
+repo -> db : INSERT
+svc --> ctrl : VantagemResponseDTO
+deactivate svc
+ctrl --> portal : 201 Created
+deactivate ctrl
+portal --> empresa : vantagem visivel aos alunos
+ref over empresa, db : Detalhe em 07-cadastrar-vantagem
+
+aluno -> portal : escolhe vantagem e confirma resgate
+portal -> ctrl : POST /vantagens/{id}/resgatar (Bearer JWT)
+activate ctrl
+ctrl -> svc : resgatar(alunoId, vantagemId)
+activate svc
+svc -> repo : debita aluno + gera Cupom (UUID)\n+ Transacao RESGATE
+repo -> db : UPDATE / INSERT
+svc ->> mq : ResgateRealizadoEvent (assincrono)
+svc --> ctrl : CupomResponseDTO(codigo, novoSaldo)
+deactivate svc
+ctrl --> portal : 200 OK
+deactivate ctrl
+portal --> aluno : resgate confirmado - exibe cupom
+ref over aluno, db : Detalhe em 08-resgatar-vantagem\n(o evento reativa a fase 4 - Notificacao)
+
+legend right
+  | Fase | Caso de uso | Diagrama detalhado |
+  | 1 | US-01 / US-02 | 01, 02 |
+  | 2 | US-03 | 03 |
+  | 3 | US-04 / US-05 | 04, 05 |
+  | 4 | US-10 / US-11 | 09 |
+  | 5 | US-06 / US-07 | 06 |
+  | 6 | US-08 / US-09 | 07, 08 |
+
+  Credito semestral (US-04) e resgate/Cupom (US-09/US-11)
+  sao casos de projeto - ver notas nos diagramas 04 e 08.
+endlegend
+
+@enduml
