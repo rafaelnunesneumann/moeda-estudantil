@@ -1,5 +1,6 @@
 package com.moedaestudantil.listener;
 
+import com.moedaestudantil.event.ResgateRealizadoEvent;
 import com.moedaestudantil.event.TransacaoRealizadaEvent;
 import com.moedaestudantil.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -20,5 +21,13 @@ public class TransacaoEmailListener {
                 event.professorEmail(), event.alunoEmail(), event.valor());
         emailService.enviarEmailProfessor(event);
         emailService.enviarEmailAluno(event);
+    }
+
+    @KafkaListener(topics = "resgate-realizado", groupId = "email-service")
+    public void onResgateRealizado(ResgateRealizadoEvent event) {
+        log.info("Evento de resgate recebido via Kafka: aluno={}, empresa={}, cupom={}",
+                event.alunoEmail(), event.empresaEmail(), event.codigoCupom());
+        emailService.enviarCupomAluno(event);
+        emailService.enviarConferenciaEmpresa(event);
     }
 }

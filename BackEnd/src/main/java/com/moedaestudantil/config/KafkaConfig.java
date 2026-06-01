@@ -28,24 +28,28 @@ public class KafkaConfig {
 
     private final KafkaProperties kafkaProperties;
 
+    // Value type is Object: o broker transporta tipos de evento distintos
+    // (TransacaoRealizadaEvent, ResgateRealizadoEvent) em topicos diferentes.
+    // O JsonSerializer adiciona o header de tipo (__TypeId__) e o JsonDeserializer
+    // o utiliza para reconstruir a classe correta em cada listener.
+
     @Bean
-    public ProducerFactory<String, TransacaoRealizadaEvent> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
         props.putAll(kafkaProperties.getProperties());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        props.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
         return new DefaultKafkaProducerFactory<>(props);
     }
 
     @Bean
-    public KafkaTemplate<String, TransacaoRealizadaEvent> kafkaTemplate() {
+    public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 
     @Bean
-    public DefaultKafkaConsumerFactory<String, TransacaoRealizadaEvent> consumerFactory() {
+    public DefaultKafkaConsumerFactory<String, Object> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
         props.putAll(kafkaProperties.getProperties());
@@ -54,14 +58,14 @@ public class KafkaConfig {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.moedaestudantil.event");
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+        // Fallback para mensagens sem header de tipo (ex.: produzidas antes desta config).
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TransacaoRealizadaEvent.class.getName());
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, TransacaoRealizadaEvent> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, TransacaoRealizadaEvent> factory =
+    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;

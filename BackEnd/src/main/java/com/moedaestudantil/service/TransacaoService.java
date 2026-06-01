@@ -26,7 +26,7 @@ public class TransacaoService {
     private final ContaCorrenteRepository contaCorrenteRepository;
     private final TransacaoRepository transacaoRepository;
     private final AlunoRepository alunoRepository;
-    private final KafkaTemplate<String, TransacaoRealizadaEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Transactional
     public TransacaoResponseDTO enviarMoedas(Long professorId, EnviarMoedasRequestDTO dto) {

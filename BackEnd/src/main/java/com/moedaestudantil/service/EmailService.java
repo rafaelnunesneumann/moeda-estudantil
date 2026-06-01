@@ -1,5 +1,6 @@
 package com.moedaestudantil.service;
 
+import com.moedaestudantil.event.ResgateRealizadoEvent;
 import com.moedaestudantil.event.TransacaoRealizadaEvent;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,59 @@ public class EmailService {
             log.info("Email de recebimento enviado para aluno: {}", event.alunoEmail());
         } catch (Exception e) {
             log.error("Erro ao enviar email para aluno {}: {}", event.alunoEmail(), e.getMessage(), e);
+        }
+    }
+
+    public void enviarCupomAluno(ResgateRealizadoEvent event) {
+        try {
+            Context ctx = new Context();
+            ctx.setVariable("alunoNome", event.alunoNome());
+            ctx.setVariable("empresaNome", event.empresaNome());
+            ctx.setVariable("vantagemDescricao", event.vantagemDescricao());
+            ctx.setVariable("codigoCupom", event.codigoCupom());
+            ctx.setVariable("custoMoedas", event.custoMoedas());
+            ctx.setVariable("novoSaldo", event.novoSaldoAluno());
+            ctx.setVariable("dataHora", event.dataHora());
+
+            String html = templateEngine.process("email/cupom-aluno", ctx);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(event.alunoEmail());
+            helper.setSubject("Seu cupom de resgate");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Email de cupom enviado para aluno: {}", event.alunoEmail());
+        } catch (Exception e) {
+            log.error("Erro ao enviar cupom para aluno {}: {}", event.alunoEmail(), e.getMessage(), e);
+        }
+    }
+
+    public void enviarConferenciaEmpresa(ResgateRealizadoEvent event) {
+        try {
+            Context ctx = new Context();
+            ctx.setVariable("empresaNome", event.empresaNome());
+            ctx.setVariable("alunoNome", event.alunoNome());
+            ctx.setVariable("vantagemDescricao", event.vantagemDescricao());
+            ctx.setVariable("codigoCupom", event.codigoCupom());
+            ctx.setVariable("custoMoedas", event.custoMoedas());
+            ctx.setVariable("dataHora", event.dataHora());
+
+            String html = templateEngine.process("email/conferencia-empresa", ctx);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromAddress);
+            helper.setTo(event.empresaEmail());
+            helper.setSubject("Resgate para conferência");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+            log.info("Email de conferência enviado para empresa: {}", event.empresaEmail());
+        } catch (Exception e) {
+            log.error("Erro ao enviar conferência para empresa {}: {}", event.empresaEmail(), e.getMessage(), e);
         }
     }
 }

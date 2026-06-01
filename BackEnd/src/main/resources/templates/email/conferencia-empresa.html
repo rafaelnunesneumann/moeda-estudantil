@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resgate para conferência</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4f8;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4f8;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#b45309 0%,#f59e0b 100%);padding:40px 40px 32px;text-align:center;">
+              <p style="margin:0 0 8px;font-size:13px;color:#fde68a;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Sistema Acadêmico</p>
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#ffffff;line-height:1.2;">Moeda Estudantil</h1>
+              <p style="margin:16px 0 0;font-size:15px;color:#fef3c7;">Plataforma de reconhecimento acadêmico</p>
+            </td>
+          </tr>
+
+          <!-- Status badge -->
+          <tr>
+            <td style="padding:0 40px;background:#ffffff;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding:28px 0 0;">
+                    <span style="display:inline-block;background-color:#fef3c7;color:#b45309;font-size:13px;font-weight:700;padding:8px 20px;border-radius:20px;letter-spacing:0.5px;">
+                      🎟️ &nbsp;NOVO RESGATE PARA CONFERÊNCIA
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:24px 40px 8px;">
+              <p style="margin:0;font-size:16px;color:#2c3e50;line-height:1.6;">
+                Olá, <strong th:text="${empresaNome}">Empresa</strong>!
+              </p>
+              <p style="margin:10px 0 0;font-size:15px;color:#566573;line-height:1.7;">
+                Um aluno resgatou uma das suas vantagens. Confira o código abaixo no momento da troca presencial.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Coupon code -->
+          <tr>
+            <td style="padding:24px 40px 8px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="border:2px dashed #fcd34d;border-radius:12px;background-color:#fffbeb;">
+                <tr>
+                  <td style="padding:24px;text-align:center;">
+                    <p style="margin:0 0 8px;font-size:11px;color:#d97706;text-transform:uppercase;letter-spacing:2px;font-weight:700;">Código do Cupom</p>
+                    <p style="margin:0;font-size:34px;color:#b45309;font-weight:800;letter-spacing:6px;font-family:'Courier New',monospace;" th:text="${codigoCupom}">XXXXXXXX</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Details card -->
+          <tr>
+            <td style="padding:24px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+
+                <tr>
+                  <td style="padding:20px 24px;border-bottom:1px solid #e2e8f0;">
+                    <p style="margin:0 0 4px;font-size:11px;color:#95a5a6;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Aluno</p>
+                    <p style="margin:0;font-size:16px;color:#2c3e50;font-weight:600;" th:text="${alunoNome}">Nome do aluno</p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:20px 24px;border-bottom:1px solid #e2e8f0;">
+                    <p style="margin:0 0 4px;font-size:11px;color:#95a5a6;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Vantagem Resgatada</p>
+                    <p style="margin:0;font-size:15px;color:#2c3e50;line-height:1.5;" th:text="${vantagemDescricao}">Descrição da vantagem</p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:20px 24px;border-bottom:1px solid #e2e8f0;">
+                    <p style="margin:0 0 4px;font-size:11px;color:#95a5a6;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Valor do Resgate</p>
+                    <p style="margin:0;font-size:28px;color:#b45309;font-weight:700;">
+                      <span th:text="${#numbers.formatDecimal(custoMoedas, 1, 'POINT', 2, 'COMMA')}">0,00</span>
+                      <span style="font-size:16px;color:#7f8c8d;font-weight:400;margin-left:4px;">moedas</span>
+                    </p>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 4px;font-size:11px;color:#95a5a6;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Data e Hora</p>
+                    <p style="margin:0;font-size:15px;color:#2c3e50;" th:text="${#temporals.format(dataHora, 'dd/MM/yyyy HH:mm')}">--/--/---- --:--</p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Info note -->
+          <tr>
+            <td style="padding:0 40px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fffbeb;border-left:4px solid #f59e0b;border-radius:4px;">
+                <tr>
+                  <td style="padding:14px 18px;">
+                    <p style="margin:0;font-size:13px;color:#92400e;line-height:1.6;">
+                      💡 &nbsp;O aluno recebeu o mesmo código. Confira se ambos coincidem antes de liberar a vantagem.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #e8ecef;margin:0;" />
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:28px 40px;text-align:center;">
+              <p style="margin:0 0 6px;font-size:13px;color:#95a5a6;">Este é um email automático. Por favor, não responda.</p>
+              <p style="margin:0;font-size:13px;color:#bdc3c7;">© 2026 Moeda Estudantil · Todos os direitos reservados</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

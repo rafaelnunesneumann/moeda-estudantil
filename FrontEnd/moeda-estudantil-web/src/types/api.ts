@@ -55,6 +55,16 @@ export interface VantagemResponseDTO {
   empresaNome: string;
 }
 
+export interface CupomResponseDTO {
+  codigo: string;
+  vantagemId: number;
+  vantagemDescricao: string;
+  empresaNome: string;
+  custoMoedas: number;
+  novoSaldo: number;
+  dataGeracao: string;
+}
+
 export interface ProfessorResponseDTO {
   id: number;
   nome: string;
