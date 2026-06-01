@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Building2,
   BookOpen,
+  Gift,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Vantagens', href: '/dashboard/vantagens', icon: Gift, roles: ['ALUNO'] },
   { label: 'Meu Perfil', href: '/dashboard/perfil', icon: UserCircle },
 ];
 

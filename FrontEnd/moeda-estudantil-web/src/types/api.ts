@@ -40,6 +40,21 @@ export interface EmpresaParceiraResponseDTO {
   email: string;
 }
 
+export interface VantagemRequestDTO {
+  descricao: string;
+  foto: string;
+  custoMoedas: number;
+}
+
+export interface VantagemResponseDTO {
+  id: number;
+  descricao: string;
+  foto: string;
+  custoMoedas: number;
+  empresaId: number;
+  empresaNome: string;
+}
+
 export interface ProfessorResponseDTO {
   id: number;
   nome: string;
